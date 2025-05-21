@@ -1,0 +1,107 @@
+// Copyright 2025 莫维龙 <kalandramo@gmail.com>. All rights reserved.
+// Use of this source code is governed by a MIT style
+// license that can be found in the LICENSE file. The original repo for
+// this file is https://github.com/srxstack/gintpl. The professional
+// version of this repository is https://github.com/srxstack/srxstack.
+
+// 第三方服务示例
+syntax = "proto3";
+
+package v1;
+
+option go_package = "github.com/srxstack/gintpl/pkg/api/apiserver/v1;v1";
+
+// FrostmourneLoginRequest 登录请求
+//      成功
+//          http://127.0.0.1:8080/api/monitor-api/user/login
+//          {username: "admin", password: "111111"}
+//          {returncode: 0, message: "ok", result: "token_value"}
+//      失败
+//          http://127.0.0.1:8080/api/monitor-api/user/login
+//          {username: "admin", password: "111111"}
+//          {returncode: 580, message: "用户名或密码错误"}
+message FrostmourneLoginRequest {
+    // username 用户名
+    string username = 1;
+    // password 密码
+    string password = 2;
+}
+
+// FrostmourneLoginResponse 登录响应
+message FrostmourneLoginResponse {
+    // returncode 响应码
+    int32 returncode = 1;
+    // message 消息
+    string message = 2;
+    // result 额外消息
+    string result = 3;
+}
+
+// CreateFrostmourneDepRequest 创建部门请求
+//      成功
+//          http://127.0.0.1:8080/api/monitor-api/department/create?_appId=frostmourne&_t=1744881469677
+//          {departmentName: "INFRA", fullName: "infrastructure"}
+//          {"returncode":0,"message":"ok","result":true}
+//      失败
+//          http://127.0.0.1:8080/api/monitor-api/department/create?_appId=frostmourne&_t=1744881469677
+//          {departmentName: "INFRA", fullName: "infrastructure"}
+//          {"returncode":5101,"message":"部门已经存在"}
+message CreateFrostmourneDepRequest {
+    // departmentName 部门名称
+    string departmentName = 1;
+    // fullName 部门全称
+    string fullName = 2;
+}
+
+// CreateFrostmourneTeamRequest 创建团队请求
+//      成功
+//          http://127.0.0.1:8080/api/monitor-api/team/create?_appId=frostmourne&_t=1744884889951
+//          {departmentId: 6, teamName: "INFRA", fullName: "infrastructure"}
+//          {returncode: 0, message: "ok", result: true}
+//      失败
+//          http://127.0.0.1:8080/api/monitor-api/team/create?_appId=frostmourne&_t=1744884889951
+//          {departmentId: 6, teamName: "INFRA", fullName: "infrastructure"}
+//          {returncode: 567, message: "团队名已经存在"}
+message CreateFrostmourneTeamRequest {
+    // departmentId 部门ID
+    int32 departmentId = 1;
+    // teamName 团队ID
+    string teamName = 2;
+    // fullName 团队名称
+    string fullName = 3;
+}
+
+// CreateFrostmourneUserRequest 创建用户请求
+//      成功
+//          http://127.0.0.1:8080/api/monitor-api/userinfo/create?_appId=frostmourne&_t=1744786084135
+//          {role: "user", teamId: 3, account: "test", password: "123456789", fullName: "测试", roles: ["user"]}
+//          {returncode: 0, message: "ok", result: true}
+//
+//      失败
+//          http://127.0.0.1:8080/api/monitor-api/userinfo/create?_appId=frostmourne&_t=1744786206214
+//          {role: "user", teamId: 3, account: "test", password: "123456789", fullName: "测试", roles: ["user"]}
+//          {returncode: 5690, message: "账号已经存在"}
+message CreateFrostmourneUserRequest {
+    // role 用户所属角色
+    string role = 1;
+    // teamId 团队ID
+    int32 teamId = 2;
+    // account 账号
+    string account = 3;
+    // password 密码
+    string password = 4;
+    // fullName 全称
+    string fullName = 5;
+    // roles 所属角色列表
+    repeated string roles = 6;
+}
+
+// CommonFrostmourneResponse 公共响应信息
+message CommonFrostmourneResponse {
+    // returncode 响应码
+    int32 returncode = 1;
+    // message 消息
+    string message = 2;
+    // result 结果 true or false
+    bool result = 3;
+}
