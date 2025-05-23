@@ -16,6 +16,7 @@ require (
 	github.com/spf13/viper v1.20.1
 	github.com/srxstack/srxstack v0.0.2
 	github.com/stretchr/testify v1.10.0
+	github.com/swxctx/ghttp v1.0.0
 	go.uber.org/automaxprocs v1.6.0
 	go.uber.org/zap v1.27.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20250303144028-a0af3efb3deb

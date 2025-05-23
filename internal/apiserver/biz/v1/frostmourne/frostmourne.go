@@ -9,13 +9,15 @@ package frostmourne
 import (
 	"context"
 	"encoding/json"
-	"io"
-	"net/http"
+	"errors"
+	"fmt"
 
 	"github.com/srxstack/gintpl/internal/pkg/log"
-	apiv1 "github.com/srxstack/gintpl/pkg/api/apiserver/v1"
 	"github.com/srxstack/gintpl/pkg/configz"
-	"github.com/srxstack/gintpl/pkg/httpx"
+
+	"github.com/swxctx/ghttp"
+
+	apiv1 "github.com/srxstack/gintpl/pkg/api/apiserver/v1"
 )
 
 const (
@@ -41,145 +43,103 @@ func New() *frostmourneBiz {
 	return &frostmourneBiz{}
 }
 
+// 创建部门.
 func (b *frostmourneBiz) CreateDep(ctx context.Context, rq *apiv1.CreateFrostmourneDepRequest) (*apiv1.CommonFrostmourneResponse, error) {
-	// 获取 token
-	loginResult, err := b.login(ctx)
-	if err != nil {
-		return nil, err
-	}
-	toke := loginResult.GetResult()
-
-	client := httpx.NewHTTPX()
-
-	header := make(map[string]string)
-	header["frostmourne-token"] = toke
-	header["Content-Type"] = contentType
-	client.SetHeader(header)
-
-	data, err := json.Marshal(rq)
-	if err != nil {
-		return nil, err
-	}
-
-	url := configz.C.FrostmourneOptions.URL + apiCreateDep
-	resp, err := client.POST(ctx, url, data)
-	log.Debugw("Send create dept req", "url", url)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	return b.resp(resp)
+	return b.sendRequest(ctx, apiCreateDep, rq)
 }
 
+// 创建团队.
 func (b *frostmourneBiz) CreateTeam(ctx context.Context, rq *apiv1.CreateFrostmourneTeamRequest) (*apiv1.CommonFrostmourneResponse, error) {
-	// 获取 token
-	loginResult, err := b.login(ctx)
-	if err != nil {
-		return nil, err
-	}
-	toke := loginResult.GetResult()
-
-	client := httpx.NewHTTPX()
-
-	header := make(map[string]string)
-	header["frostmourne-token"] = toke
-	header["Content-Type"] = "application/json; charset=utf-8"
-	client.SetHeader(header)
-
-	data, err := json.Marshal(rq)
-	if err != nil {
-		return nil, err
-	}
-
-	url := configz.C.FrostmourneOptions.URL
-	resp, err := client.POST(ctx, url, data)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	return b.resp(resp)
+	return b.sendRequest(ctx, apiCreateTeam, rq)
 }
 
+// 创建用户.
 func (b *frostmourneBiz) CreateUser(ctx context.Context, rq *apiv1.CreateFrostmourneUserRequest) (*apiv1.CommonFrostmourneResponse, error) {
-	// 获取 token
-	loginResult, err := b.login(ctx)
-	if err != nil {
-		return nil, err
-	}
-	toke := loginResult.GetResult()
-
-	client := httpx.NewHTTPX()
-
-	header := make(map[string]string)
-	header["frostmourne-token"] = toke
-	header["Content-Type"] = "application/json; charset=utf-8"
-	client.SetHeader(header)
-
-	data, err := json.Marshal(rq)
-	if err != nil {
-		return nil, err
-	}
-
-	url := configz.C.FrostmourneOptions.URL
-	resp, err := client.POST(ctx, url, data)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	return b.resp(resp)
+	return b.sendRequest(ctx, apiCreateUser, rq)
 }
 
-func (b *frostmourneBiz) resp(resp *http.Response) (*apiv1.CommonFrostmourneResponse, error) {
-	var result *apiv1.CommonFrostmourneResponse
+// 发送请求的公共方法.
+func (b *frostmourneBiz) sendRequest(ctx context.Context, apiPath string, request interface{}) (*apiv1.CommonFrostmourneResponse, error) {
+	var result apiv1.CommonFrostmourneResponse
 
-	body, err := io.ReadAll(resp.Body)
+	// 获取token
+	token, err := b.getToken(ctx)
 	if err != nil {
-		return result, err
+		return nil, fmt.Errorf("获取token失败: %w", err)
 	}
-	log.Debugw("Send create dept resp", "body", string(body))
-	err = json.Unmarshal(body, &result)
+
+	// 构建请求URL
+	furl := configz.C.FrostmourneOptions.URL + apiPath
+
+	// 序列化请求数据
+	data, err := json.Marshal(request)
 	if err != nil {
-		return result, err
+		return nil, fmt.Errorf("序列化请求数据失败: %w", err)
 	}
-	return result, nil
+
+	// 构建并发送请求
+	req := ghttp.Request{
+		Method:    "POST",
+		Url:       furl,
+		ShowDebug: true,
+		Body:      data,
+	}
+	req.AddHeader("frostmourne-token", token)
+	req.AddHeader("Content-Type", contentType)
+
+	log.Debugw("发送请求", "url", furl)
+	res, err := req.Do()
+	if err != nil {
+		return nil, fmt.Errorf("发送请求失败: %w", err)
+	}
+
+	// 处理响应
+	err = res.Body.FromToJson(&result)
+	if err != nil {
+		return nil, fmt.Errorf("解析响应失败: %w", err)
+	}
+
+	return &result, nil
 }
 
-func (b *frostmourneBiz) login(ctx context.Context) (*apiv1.FrostmourneLoginResponse, error) {
-	var result *apiv1.FrostmourneLoginResponse
+// 获取token的公共方法.
+func (b *frostmourneBiz) getToken(ctx context.Context) (string, error) {
+	var result apiv1.FrostmourneLoginResponse
 
-	client := httpx.NewHTTPX()
-
-	// url 组合
-	url := configz.C.FrostmourneOptions.URL + apiLogin
+	furl := configz.C.FrostmourneOptions.URL + apiLogin
 
 	// 获取管理员账号密码
-	var basicAuth apiv1.FrostmourneLoginRequest
-	basicAuth.Username = configz.C.FrostmourneOptions.Username
-	basicAuth.Password = configz.C.FrostmourneOptions.Password
+	basicAuth := apiv1.FrostmourneLoginRequest{
+		Username: configz.C.FrostmourneOptions.Username,
+		Password: configz.C.FrostmourneOptions.Password,
+	}
 
 	data, err := json.Marshal(&basicAuth)
 	if err != nil {
-		return result, err
+		return "", fmt.Errorf("序列化登录请求失败: %w", err)
 	}
 
-	resp, err := client.POST(ctx, url, data)
+	req := ghttp.Request{
+		Method:    "POST",
+		Url:       furl,
+		ShowDebug: true,
+		Body:      data,
+	}
+	req.AddHeader("Content-Type", contentType)
+
+	res, err := req.Do()
 	if err != nil {
-		return result, err
+		return "", fmt.Errorf("登录请求失败: %w", err)
 	}
 
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
+	err = res.Body.FromToJson(&result)
 	if err != nil {
-		return result, err
+		return "", fmt.Errorf("解析登录响应失败: %w", err)
 	}
 
-	err = json.Unmarshal(body, &result)
-	if err != nil {
-		return result, err
+	if result.GetResult() == "" {
+		return "", errors.New("获取token失败，返回结果为空")
 	}
-	return result, nil
+
+	return result.GetResult(), nil
 }
