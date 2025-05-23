@@ -41,7 +41,7 @@ The project features include:
 
 	cobra.OnInitialize(core.OnInitialize(&configFile, "GINTPL", searchDirs(), defaultConfigName))
 
-	cmd.PersistentFlags().StringVarP(&configFile, "config", "c", filePath(), "Path to the gintpl configuration file.")
+	cmd.PersistentFlags().StringVarP(&configFile, "config", "c", filePath(), "Path to the GinTpl configuration file.")
 
 	opts.AddFlags(cmd.PersistentFlags())
 

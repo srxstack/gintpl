@@ -9,12 +9,12 @@ syntax = "proto3";
 
 package v1;
 
-// 提供用于定义 HTTP 映射的功能，比如通过 option (google.api.http) 实现 gRPC 到 HTTP 的映射
-import "apiserver/v1/healthz.proto";
-import "apiserver/v1/user.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
+
+import "apiserver/v1/healthz.proto";
+import "apiserver/v1/user.proto";
 
 option go_package = "github.com/srxstack/gintpl/pkg/api/apiserver/v1;v1";
 
